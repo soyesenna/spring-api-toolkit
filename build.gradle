@@ -1,0 +1,83 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
+plugins {
+	id 'java-library'
+	id 'org.springframework.boot' version '3.5.7'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id "com.vanniktech.maven.publish" version "0.32.0"
+	id 'signing'
+}
+
+group = 'com.soyesenna'
+version = '0.0.1'
+description = 'API Toolkit for Spring Project'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+
+tasks.withType(Javadoc) {
+	options {
+		encoding 'UTF-8'
+	}
+}
+
+
+
+signing {
+	sign publishing.publications
+}
+
+mavenPublishing {
+	signAllPublications()
+	publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
+
+	coordinates("com.soyesenna", "spring-api-toolkit", "0.1.1")
+
+	pom {
+		name = 'spring-api-toolkit'
+		description = 'API Toolkit for Spring Project'
+		url = 'https://github.com/soyesenna/spring-api-toolkit.git'
+
+		licenses {
+			license {
+				name = 'Apache License'
+				url = 'https://github.com/soyesenna/spring-api-toolkit/blob/main/LICENSE'
+			}
+		}
+
+		developers {
+			developer {
+				id = 'soyesenna'
+				name = 'Jooyoung Kim'
+				email = 'kjy915875@gmail.com'
+			}
+		}
+
+		scm {
+			connection = 'scm:git:github.com/soyesenna/spring-api-toolkit.git'
+			developerConnection = 'scm:git:ssh://github.com:soyesenna/spring-api-toolkit.git'
+			url = 'https://github.com/soyesenna/spring-api-toolkit/tree/main'
+		}
+	}
+}
+
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.data:spring-data-commons'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
