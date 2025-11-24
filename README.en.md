@@ -436,12 +436,16 @@ public class UserService {
 
 ### Swagger Documentation
 ```java
-@ApiErrorCode({UserErrorCode.class, AuthErrorCode.class})
+@ApiErrorCode({
+    @ApiErrorCode.ErrorRef(type = UserErrorCode.class, codes = {"USER_NOT_FOUND", "DUPLICATE_EMAIL"}),
+    @ApiErrorCode.ErrorRef(type = AuthErrorCode.class) // when codes omitted, all enum values are used
+})
 @GetMapping("/{id}")
 public User getUser(@PathVariable String id) {
     return userService.findById(id);
 }
 ```
+- `codes` filters specific enum constants; when empty, the whole enum is registered.
 - `ApiErrorCodeOperationCustomizer` automatically adds `ApiData` error examples to Swagger.
 
 ## Configuration

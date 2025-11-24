@@ -8,8 +8,11 @@ import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -24,16 +27,37 @@ public class ApiErrorCodeOperationCustomizer implements OperationCustomizer {
       return operation;
     }
     ApiResponses responses = operation.getResponses();
-    for (Class<? extends BaseErrorCode> enumClass : annotation.value()) {
-      BaseErrorCode[] errorCodes = enumClass.getEnumConstants();
-      if (errorCodes == null) {
-        continue;
-      }
-      for (BaseErrorCode errorCode : errorCodes) {
-        this.registerExample(responses, errorCode);
-      }
+    for (ApiErrorCode.ErrorRef ref : annotation.value()) {
+      this.registerByRef(responses, ref);
     }
     return operation;
+  }
+
+  private void registerByRef(ApiResponses responses, ApiErrorCode.ErrorRef ref) {
+    Class<? extends Enum<? extends BaseErrorCode>> enumClass = ref.type();
+    BaseErrorCode[] errorCodes = (BaseErrorCode[]) enumClass.getEnumConstants();
+    if (errorCodes == null) {
+      return;
+    }
+    Set<String> includes = this.resolveIncludes(ref.codes());
+    for (BaseErrorCode errorCode : errorCodes) {
+      if (!includes.isEmpty() && !includes.contains(this.enumNameOf(errorCode))) {
+        continue;
+      }
+      this.registerExample(responses, errorCode);
+    }
+  }
+
+  private Set<String> resolveIncludes(String[] codes) {
+    if (codes == null || codes.length == 0) {
+      return Set.of();
+    }
+    Set<String> includes = new HashSet<>();
+    Arrays.stream(codes)
+        .filter(code -> code != null && !code.isBlank())
+        .map(String::trim)
+        .forEach(includes::add);
+    return includes;
   }
 
   private void registerExample(ApiResponses responses, BaseErrorCode errorCode) {
@@ -79,6 +103,13 @@ public class ApiErrorCodeOperationCustomizer implements OperationCustomizer {
   }
 
   private String resolveExampleKey(BaseErrorCode errorCode) {
+    return errorCode.resolveCode();
+  }
+
+  private String enumNameOf(BaseErrorCode errorCode) {
+    if (errorCode instanceof Enum<?> enumConstant) {
+      return enumConstant.name();
+    }
     return errorCode.resolveCode();
   }
 }

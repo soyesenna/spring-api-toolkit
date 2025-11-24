@@ -436,12 +436,16 @@ public class UserService {
 
 ### Swagger 문서화
 ```java
-@ApiErrorCode({UserErrorCode.class, AuthErrorCode.class})
+@ApiErrorCode({
+    @ApiErrorCode.ErrorRef(type = UserErrorCode.class, codes = {"USER_NOT_FOUND", "DUPLICATE_EMAIL"}),
+    @ApiErrorCode.ErrorRef(type = AuthErrorCode.class) // codes 생략 시 enum 전체 사용
+})
 @GetMapping("/{id}")
 public User getUser(@PathVariable String id) {
     return userService.findById(id);
 }
 ```
+- `codes`를 지정하면 해당 enum 상수만, 비우면 enum 전체를 예제로 등록합니다.
 - `ApiErrorCodeOperationCustomizer`가 에러 코드별 `ApiData` 예제를 Swagger에 자동 추가합니다.
 
 ## 설정

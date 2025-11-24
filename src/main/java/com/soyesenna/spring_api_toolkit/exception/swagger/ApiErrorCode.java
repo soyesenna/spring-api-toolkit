@@ -12,5 +12,17 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ApiErrorCode {
 
-  Class<? extends BaseErrorCode>[] value();
+    ErrorRef[] value();
+
+    @interface ErrorRef {
+        /**
+         * Enum type that implements BaseErrorCode.
+         */
+        Class<? extends Enum<? extends BaseErrorCode>> type();
+
+        /**
+         * Enum constant names to include. If empty, all constants of the enum are used.
+         */
+        String[] codes() default {};
+    }
 }

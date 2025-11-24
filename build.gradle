@@ -10,7 +10,7 @@ plugins {
 
 
 group = 'com.soyesenna'
-version = '0.2.1'
+version = '0.3.0'
 description = 'API Toolkit for Spring Project'
 
 java {
@@ -37,7 +37,7 @@ mavenPublishing {
 	signAllPublications()
 	publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-	coordinates("com.soyesenna", "spring-api-toolkit", "0.2.1")
+	coordinates("com.soyesenna", "spring-api-toolkit", "0.3.0")
 
 	pom {
 		name = 'spring-api-toolkit'
