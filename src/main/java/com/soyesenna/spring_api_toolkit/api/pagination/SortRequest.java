@@ -1,4 +1,4 @@
-package com.soyesenna.spring_api_toolkit.pagination;
+package com.soyesenna.spring_api_toolkit.api.pagination;
 
 import org.springframework.data.domain.Sort;
 

@@ -1,4 +1,4 @@
-package com.soyesenna.spring_api_toolkit.core;
+package com.soyesenna.spring_api_toolkit.api.core;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

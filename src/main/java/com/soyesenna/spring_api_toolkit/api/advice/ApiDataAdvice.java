@@ -1,6 +1,6 @@
-package com.soyesenna.spring_api_toolkit.advice;
+package com.soyesenna.spring_api_toolkit.api.advice;
 
-import com.soyesenna.spring_api_toolkit.core.ApiData;
+import com.soyesenna.spring_api_toolkit.api.core.ApiData;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;

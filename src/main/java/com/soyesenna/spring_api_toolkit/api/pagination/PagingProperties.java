@@ -1,4 +1,4 @@
-package com.soyesenna.spring_api_toolkit.pagination;
+package com.soyesenna.spring_api_toolkit.api.pagination;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.boot.context.properties.ConfigurationProperties;
