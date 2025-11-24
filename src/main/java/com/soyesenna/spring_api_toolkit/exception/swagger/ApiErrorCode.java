@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface ApiErrorCode {
-    Class<? extends BaseErrorCode>[] value();
+
+  Class<? extends BaseErrorCode>[] value();
 }

@@ -16,7 +16,7 @@ import org.springframework.validation.FieldError;
 @JsonSerialize
 public class ApiData<T> {
 
-  private static final int SUCCESS_CODE = 0;
+  private static final String SUCCESS_CODE = "SUCCESS";
   private static final String SUCCESS_MESSAGE = "요청에 성공했습니다.";
 
   @JsonIgnore
@@ -30,7 +30,7 @@ public class ApiData<T> {
 
   private final Boolean success;
   private final T data;
-  private final Integer code;
+  private final String code;
   private final Object message;
 
   private ApiData(Builder<T> builder) {
@@ -101,7 +101,7 @@ public class ApiData<T> {
         .build();
   }
 
-  public static <T> ApiData<T> error(HttpStatus httpStatus, int code, Object message) {
+  public static <T> ApiData<T> error(HttpStatus httpStatus, String code, Object message) {
     return ApiData.<T>builder()
         .httpStatus(httpStatus)
         .success(false)
@@ -126,7 +126,7 @@ public class ApiData<T> {
     return ApiData.<Map<String, String>>builder()
         .httpStatus(httpStatus)
         .success(false)
-        .code(httpStatus.value())
+        .code("VALIDATION_ERROR")
         .message("요청 유효성 검증에 실패했습니다.")
         .data(errors)
         .build();
@@ -152,7 +152,7 @@ public class ApiData<T> {
     return data;
   }
 
-  public Integer getCode() {
+  public String getCode() {
     return code;
   }
 
@@ -181,7 +181,7 @@ public class ApiData<T> {
     private MediaType contentType = MediaType.APPLICATION_JSON;
     private Boolean success = true;
     private T data;
-    private Integer code = SUCCESS_CODE;
+    private String code = SUCCESS_CODE;
     private Object message = SUCCESS_MESSAGE;
 
     public Builder<T> httpStatus(HttpStatus httpStatus) {
@@ -217,7 +217,7 @@ public class ApiData<T> {
       return this;
     }
 
-    public Builder<T> code(Integer code) {
+    public Builder<T> code(String code) {
       this.code = code;
       return this;
     }

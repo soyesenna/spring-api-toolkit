@@ -11,38 +11,48 @@ import org.springframework.http.HttpStatus;
  */
 public interface BaseErrorCode {
 
-    HttpStatus getHttpStatus();
+  HttpStatus getHttpStatus();
 
-    String getMessage();
+  String getCode();
 
-    default LogLevel getLogLevel() {
-        return LogLevel.ERROR;
+  String getMessage();
+
+  default LogLevel getLogLevel() {
+    return LogLevel.ERROR;
+  }
+
+  default String getDomain() {
+    Class<?> source =
+        this instanceof Enum<?> enumConstant ? enumConstant.getDeclaringClass() : this.getClass();
+    return source.getSimpleName();
+  }
+
+  default String resolveCode() {
+    String code = this.getCode();
+    if (code == null || code.isBlank()) {
+      if (this instanceof Enum<?> enumConstant) {
+        return enumConstant.name();
+      }
+      return this.getClass().getSimpleName();
     }
+    return code;
+  }
 
-    default String getDomain() {
-        Class<?> source = this instanceof Enum<?> enumConstant ? enumConstant.getDeclaringClass() : this.getClass();
-        return source.getSimpleName();
-    }
+  default CoreException throwException() {
+    return new CoreException(this);
+  }
 
-    default String getCode() {
-        return this instanceof Enum<?> enumConstant ? enumConstant.name() : this.getClass().getSimpleName();
-    }
+  default Supplier<CoreException> args(Object... values) {
+    Object[] safeArgs = values == null ? new Object[0] : Arrays.copyOf(values, values.length);
+    return () -> new CoreException(this, safeArgs);
+  }
 
-    default CoreException throwException() {
-        return new CoreException(this);
-    }
+  default CoreException getWithoutStackTrace() {
+    return new CoreException(this, false);
+  }
 
-    default Supplier<CoreException> args(Object... values) {
-        Object[] safeArgs = values == null ? new Object[0] : Arrays.copyOf(values, values.length);
-        return () -> new CoreException(this, safeArgs);
-    }
-
-    default CoreException getWithoutStackTrace() {
-        return new CoreException(this, false);
-    }
-
-    default Supplier<CoreException> argsWithoutStackTrace(Object... values) {
-        Object[] safeArgs = values == null ? new Object[0] : Arrays.copyOf(values, values.length);
-        return () -> new CoreException(this, false, safeArgs);
-    }
+  default Supplier<CoreException> argsWithoutStackTrace(Object... values) {
+    Object[] safeArgs = values == null ? new Object[0] : Arrays.copyOf(values, values.length);
+    return () -> new CoreException(this, false, safeArgs);
+  }
 }
