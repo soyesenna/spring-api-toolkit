@@ -1,6 +1,7 @@
 package com.soyesenna.spring_api_toolkit.exception.error;
 
 import com.soyesenna.spring_api_toolkit.exception.CoreException;
+import com.soyesenna.spring_api_toolkit.exception.ExceptionSupplier;
 import java.util.Arrays;
 import java.util.function.Supplier;
 import org.springframework.boot.logging.LogLevel;
@@ -9,7 +10,7 @@ import org.springframework.http.HttpStatus;
 /**
  * Base contract for every error enum used inside the toolkit.
  */
-public interface BaseErrorCode {
+public interface BaseErrorCode extends ExceptionSupplier {
 
   HttpStatus getHttpStatus();
 
@@ -38,11 +39,12 @@ public interface BaseErrorCode {
     return code;
   }
 
+  @Override
   default CoreException throwException() {
     return new CoreException(this);
   }
 
-  default Supplier<CoreException> args(Object... values) {
+  default ExceptionSupplier args(Object... values) {
     Object[] safeArgs = values == null ? new Object[0] : Arrays.copyOf(values, values.length);
     return () -> new CoreException(this, safeArgs);
   }
