@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Maven Central](https://img.shields.io/badge/Maven%20Central-0.0.1-blue.svg)](https://central.sonatype.com/)
 
-> Spring Boot 프로젝트를 위한 표준화된 API 응답 구조 및 페이지네이션 라이브러리
+> Spring Boot 프로젝트를 위한 표준화된 API 응답, 페이지네이션, 타입 세이프 예외 처리 라이브러리
 
 [🌐 English](./README.en.md) | 한국어
 
@@ -23,6 +23,7 @@
   - [요청 처리](#요청-처리)
   - [응답 생성](#응답-생성)
   - [정렬 기능](#정렬-기능)
+- [예외 처리](#예외-처리)
 - [설정](#설정)
 - [실무 예제](#실무-예제)
 - [FAQ](#faq)
@@ -36,6 +37,8 @@
 - 자동 HTTP 상태 코드 및 헤더 처리
 - Validation 에러 자동 변환
 - 타입 안전한 제네릭 지원
+- 타입 안전한 에러 코드 및 전역 예외 처리
+- Swagger에 에러 응답 예제 자동 등록
 
 ### 📄 강력한 페이지네이션
 - Spring Data와 완벽 통합
@@ -134,7 +137,7 @@ public ApiData<User> getUser(@PathVariable Long id) {
     if (user == null) {
         return ApiData.error(
             HttpStatus.NOT_FOUND,
-            404,
+            "USER_NOT_FOUND",
             "사용자를 찾을 수 없습니다."
         );
     }
@@ -166,7 +169,7 @@ public class GlobalExceptionHandler {
     "name": "홍길동",
     "email": "hong@example.com"
   },
-  "code": 0,
+  "code": "COMMON-00000",
   "message": "요청에 성공했습니다."
 }
 ```
@@ -175,9 +178,14 @@ public class GlobalExceptionHandler {
 ```json
 {
   "success": false,
-  "data": null,
-  "code": 404,
-  "message": "사용자를 찾을 수 없습니다."
+  "data": {
+    "path": "/api/users/1",
+    "type": "UserErrorCode",
+    "timestamp": "2025-01-24T10:15:30Z",
+    "logLevel": "ERROR"
+  },
+  "code": "USER_NOT_FOUND",
+  "message": "사용자를 찾을 수 없습니다."  // MessageFormat으로 파라미터 대체 가능
 }
 ```
 
@@ -189,7 +197,7 @@ public class GlobalExceptionHandler {
     "email": "이메일 형식이 올바르지 않습니다.",
     "password": "비밀번호는 8자 이상이어야 합니다."
   },
-  "code": 400,
+  "code": "COMMON-00001",
   "message": "요청 유효성 검증에 실패했습니다."
 }
 ```
@@ -207,7 +215,7 @@ public ApiData<byte[]> downloadFile() {
         .data(fileData)
         .contentType(MediaType.APPLICATION_PDF)
         .header("Content-Disposition", "attachment; filename=document.pdf")
-        .code(0)
+        .code("FILE_DOWNLOAD_SUCCESS")
         .message("파일 다운로드 성공")
         .build();
 }
@@ -295,7 +303,7 @@ GET /api/users?page=1&size=20&sorts[0].property=createdAt&sorts[0].direction=DES
       }
     ]
   },
-  "code": 0,
+  "code": "COMMON-00000",
   "message": "요청에 성공했습니다."
 }
 ```
@@ -356,6 +364,85 @@ PagingRequest customRequest = new PagingRequest(
     )
 );
 ```
+
+## 예외 처리
+
+### ErrorCode 정의
+```java
+public enum UserErrorCode implements BaseErrorCode {
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자 {0}을 찾을 수 없습니다."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이메일 {0}이 이미 존재합니다.");
+
+    private final HttpStatus status;
+    private final String message;
+
+    UserErrorCode(HttpStatus status, String message) {
+        this.status = status;
+        this.message = message;
+    }
+
+    @Override
+    public HttpStatus getHttpStatus() {
+        return status;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String getCode() {
+        return "USER_" + this.name(); // 미구현 시 enum 이름으로 자동 채움
+    }
+}
+```
+
+### 예외 발생 & AssertToolkit
+```java
+@Service
+public class UserService {
+
+    public User findById(String id) {
+        return userRepository.findById(id)
+            .orElseThrow(UserErrorCode.USER_NOT_FOUND.args(id));
+    }
+
+    public void create(String email) {
+        AssertToolkit.hasText(email, CommonErrorCode.INVALID_EMAIL, email);
+    }
+}
+```
+- `CommonErrorCode`는 프로젝트 공통 에러 코드를 담는 예시 enum입니다.
+
+### 전역 예외 응답 (자동)
+- `CoreException`을 던지면 `GlobalExceptionHandler`가 `ApiData`로 감싸 응답합니다.
+- 메시지는 `MessageFormat`으로 파라미터를 치환하고, `getCode()`가 비어있으면 enum 이름을 사용합니다.
+- 예상치 못한 예외는 `UNEXPECTED_ERROR` 코드와 함께 500으로 응답합니다.
+
+```json
+{
+  "success": false,
+  "data": {
+    "path": "/api/users/123",
+    "type": "UserErrorCode",
+    "timestamp": "2025-01-24T10:15:30Z",
+    "logLevel": "ERROR"
+  },
+  "code": "USER_NOT_FOUND",
+  "message": "사용자 123을 찾을 수 없습니다."
+}
+```
+
+### Swagger 문서화
+```java
+@ApiErrorCode({UserErrorCode.class, AuthErrorCode.class})
+@GetMapping("/{id}")
+public User getUser(@PathVariable String id) {
+    return userService.findById(id);
+}
+```
+- `ApiErrorCodeOperationCustomizer`가 에러 코드별 `ApiData` 예제를 Swagger에 자동 추가합니다.
 
 ## 설정
 
@@ -420,31 +507,21 @@ public ApiData<PagingResponse<UserDto>> getUsers(
 ### 에러 처리 통합
 ```java
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class CustomExceptionBridge {
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ApiData<Void> handleNotFound(EntityNotFoundException ex) {
-        return ApiData.error(HttpStatus.NOT_FOUND, 404, ex.getMessage());
+    public CoreException handleNotFound(EntityNotFoundException ex) {
+        return UserErrorCode.USER_NOT_FOUND.throwException();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ApiData<Void> handleBadRequest(IllegalArgumentException ex) {
-        return ApiData.error(HttpStatus.BAD_REQUEST, 400, ex.getMessage());
+    public CoreException handleBadRequest(IllegalArgumentException ex) {
+        return CommonErrorCode.INVALID_REQUEST.throwException();
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiData<Map<String, String>> handleValidation(
-            MethodArgumentNotValidException ex) {
+    public ApiData<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         return ApiData.validationErrors(ex.getBindingResult().getFieldErrors());
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ApiData<Void> handleGeneral(Exception ex) {
-        return ApiData.error(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            500,
-            "서버 오류가 발생했습니다."
-        );
     }
 }
 ```

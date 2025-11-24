@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Maven Central](https://img.shields.io/badge/Maven%20Central-0.0.1-blue.svg)](https://central.sonatype.com/)
 
-> Standardized API response structure and pagination library for Spring Boot projects
+> Standardized API responses, pagination helpers, and type-safe exception handling for Spring Boot projects
 
 English | [🇰🇷 한국어](./README.md)
 
@@ -23,6 +23,7 @@ English | [🇰🇷 한국어](./README.md)
   - [Request Handling](#request-handling)
   - [Response Generation](#response-generation)
   - [Sorting](#sorting)
+- [Exception Handling](#exception-handling)
 - [Configuration](#configuration)
 - [Real-World Examples](#real-world-examples)
 - [FAQ](#faq)
@@ -36,6 +37,8 @@ English | [🇰🇷 한국어](./README.md)
 - Automatic HTTP status code and header handling
 - Automatic validation error transformation
 - Type-safe generic support
+- Type-safe error codes and global exception handling
+- Swagger error response examples generated automatically
 
 ### 📄 Powerful Pagination
 - Seamless Spring Data integration
@@ -134,7 +137,7 @@ public ApiData<User> getUser(@PathVariable Long id) {
     if (user == null) {
         return ApiData.error(
             HttpStatus.NOT_FOUND,
-            404,
+            "USER_NOT_FOUND",
             "User not found"
         );
     }
@@ -166,7 +169,7 @@ public class GlobalExceptionHandler {
     "name": "John Doe",
     "email": "john@example.com"
   },
-  "code": 0,
+  "code": "COMMON-00000",
   "message": "Request successful"
 }
 ```
@@ -175,8 +178,13 @@ public class GlobalExceptionHandler {
 ```json
 {
   "success": false,
-  "data": null,
-  "code": 404,
+  "data": {
+    "path": "/api/users/1",
+    "type": "UserErrorCode",
+    "timestamp": "2025-01-24T10:15:30Z",
+    "logLevel": "ERROR"
+  },
+  "code": "USER_NOT_FOUND",
   "message": "User not found"
 }
 ```
@@ -189,7 +197,7 @@ public class GlobalExceptionHandler {
     "email": "Invalid email format",
     "password": "Password must be at least 8 characters"
   },
-  "code": 400,
+  "code": "COMMON-00001",
   "message": "Validation failed"
 }
 ```
@@ -207,7 +215,7 @@ public ApiData<byte[]> downloadFile() {
         .data(fileData)
         .contentType(MediaType.APPLICATION_PDF)
         .header("Content-Disposition", "attachment; filename=document.pdf")
-        .code(0)
+        .code("FILE_DOWNLOAD_SUCCESS")
         .message("File download successful")
         .build();
 }
@@ -295,7 +303,7 @@ GET /api/users?page=1&size=20&sorts[0].property=createdAt&sorts[0].direction=DES
       }
     ]
   },
-  "code": 0,
+  "code": "COMMON-00000",
   "message": "Request successful"
 }
 ```
@@ -356,6 +364,85 @@ PagingRequest customRequest = new PagingRequest(
     )
 );
 ```
+
+## Exception Handling
+
+### Define ErrorCode
+```java
+public enum UserErrorCode implements BaseErrorCode {
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User {0} not found"),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "Email {0} already exists");
+
+    private final HttpStatus status;
+    private final String message;
+
+    UserErrorCode(HttpStatus status, String message) {
+        this.status = status;
+        this.message = message;
+    }
+
+    @Override
+    public HttpStatus getHttpStatus() {
+        return status;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+    @Override
+    public String getCode() {
+        return "USER_" + this.name(); // falls back to enum name if omitted
+    }
+}
+```
+
+### Throw Exceptions & AssertToolkit
+```java
+@Service
+public class UserService {
+
+    public User findById(String id) {
+        return userRepository.findById(id)
+            .orElseThrow(UserErrorCode.USER_NOT_FOUND.args(id));
+    }
+
+    public void create(String email) {
+        AssertToolkit.hasText(email, CommonErrorCode.INVALID_EMAIL, email);
+    }
+}
+```
+- `CommonErrorCode` is a sample enum that holds project-wide shared error codes.
+
+### Global Exception Response (automatic)
+- Throw `CoreException` and `GlobalExceptionHandler` wraps it into `ApiData`.
+- Messages use `MessageFormat` with args; if `getCode()` is blank the enum name is used.
+- Unexpected errors respond with `UNEXPECTED_ERROR` and HTTP 500.
+
+```json
+{
+  "success": false,
+  "data": {
+    "path": "/api/users/123",
+    "type": "UserErrorCode",
+    "timestamp": "2025-01-24T10:15:30Z",
+    "logLevel": "ERROR"
+  },
+  "code": "USER_NOT_FOUND",
+  "message": "User 123 not found"
+}
+```
+
+### Swagger Documentation
+```java
+@ApiErrorCode({UserErrorCode.class, AuthErrorCode.class})
+@GetMapping("/{id}")
+public User getUser(@PathVariable String id) {
+    return userService.findById(id);
+}
+```
+- `ApiErrorCodeOperationCustomizer` automatically adds `ApiData` error examples to Swagger.
 
 ## Configuration
 
@@ -420,31 +507,21 @@ public ApiData<PagingResponse<UserDto>> getUsers(
 ### Unified Error Handling
 ```java
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class CustomExceptionBridge {
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ApiData<Void> handleNotFound(EntityNotFoundException ex) {
-        return ApiData.error(HttpStatus.NOT_FOUND, 404, ex.getMessage());
+    public CoreException handleNotFound(EntityNotFoundException ex) {
+        return UserErrorCode.USER_NOT_FOUND.throwException();
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ApiData<Void> handleBadRequest(IllegalArgumentException ex) {
-        return ApiData.error(HttpStatus.BAD_REQUEST, 400, ex.getMessage());
+    public CoreException handleBadRequest(IllegalArgumentException ex) {
+        return CommonErrorCode.INVALID_REQUEST.throwException();
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ApiData<Map<String, String>> handleValidation(
-            MethodArgumentNotValidException ex) {
+    public ApiData<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         return ApiData.validationErrors(ex.getBindingResult().getFieldErrors());
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ApiData<Void> handleGeneral(Exception ex) {
-        return ApiData.error(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            500,
-            "Internal server error"
-        );
     }
 }
 ```
