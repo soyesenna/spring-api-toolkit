@@ -1,4 +1,4 @@
-package com.soyesenna.spring_api_toolkit.exception.exception;
+package com.soyesenna.spring_api_toolkit.exception;
 
 import com.soyesenna.spring_api_toolkit.exception.error.BaseErrorCode;
 import java.util.Arrays;

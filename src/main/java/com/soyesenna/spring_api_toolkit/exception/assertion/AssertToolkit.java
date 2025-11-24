@@ -1,7 +1,7 @@
 package com.soyesenna.spring_api_toolkit.exception.assertion;
 
 import com.soyesenna.spring_api_toolkit.exception.error.BaseErrorCode;
-import com.soyesenna.spring_api_toolkit.exception.exception.CoreException;
+import com.soyesenna.spring_api_toolkit.exception.CoreException;
 import java.util.Collection;
 import java.util.Map;
 import org.springframework.util.StringUtils;

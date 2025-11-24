@@ -1,6 +1,6 @@
 package com.soyesenna.spring_api_toolkit.exception.error;
 
-import com.soyesenna.spring_api_toolkit.exception.exception.CoreException;
+import com.soyesenna.spring_api_toolkit.exception.CoreException;
 import java.util.Arrays;
 import java.util.function.Supplier;
 import org.springframework.boot.logging.LogLevel;

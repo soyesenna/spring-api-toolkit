@@ -1,7 +1,7 @@
 package com.soyesenna.spring_api_toolkit.exception.handler;
 
 import com.soyesenna.spring_api_toolkit.exception.error.BaseErrorCode;
-import com.soyesenna.spring_api_toolkit.exception.exception.CoreException;
+import com.soyesenna.spring_api_toolkit.exception.CoreException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.text.MessageFormat;
