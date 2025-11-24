@@ -3,7 +3,7 @@ package com.soyesenna.spring_api_toolkit.pagination;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
-public record PageResponse<T>(
+public record PagingResponse<T>(
     List<T> content,
     int page,
     int size,
@@ -16,19 +16,19 @@ public record PageResponse<T>(
     List<SortRequest> sort
 ) {
 
-  public PageResponse {
+  public PagingResponse {
     content = content == null ? List.of() : List.copyOf(content);
     sort = sort == null ? List.of() : List.copyOf(sort);
   }
 
-  public static <T> PageResponse<T> from(Page<T> page) {
+  public static <T> PagingResponse<T> from(Page<T> page) {
     List<SortRequest> sortRequests = page.getSort().isUnsorted()
         ? List.of()
         : page.getSort().stream()
             .map(order -> new SortRequest(order.getProperty(), order.getDirection()))
             .toList();
 
-    return new PageResponse<>(
+    return new PagingResponse<>(
         page.getContent(),
         page.getNumber() + 1,
         page.getSize(),

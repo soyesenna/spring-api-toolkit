@@ -8,6 +8,7 @@ plugins {
 	id 'signing'
 }
 
+
 group = 'com.soyesenna'
 version = '0.0.1'
 description = 'API Toolkit for Spring Project'
@@ -22,14 +23,11 @@ repositories {
 	mavenCentral()
 }
 
-
 tasks.withType(Javadoc) {
 	options {
 		encoding 'UTF-8'
 	}
 }
-
-
 
 signing {
 	sign publishing.publications
@@ -39,7 +37,7 @@ mavenPublishing {
 	signAllPublications()
 	publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-	coordinates("com.soyesenna", "spring-api-toolkit", "0.1.1")
+	coordinates("com.soyesenna", "spring-api-toolkit", "0.0.1")
 
 	pom {
 		name = 'spring-api-toolkit'
@@ -71,11 +69,16 @@ mavenPublishing {
 
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.data:spring-data-commons'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	implementation 'org.springframework.boot:spring-boot-dependencies:3.5.7'
+
+	api "org.springframework.boot:spring-boot-starter"
+	api "org.springframework.boot:spring-boot-starter-web"
+	api 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 tasks.named('test') {
