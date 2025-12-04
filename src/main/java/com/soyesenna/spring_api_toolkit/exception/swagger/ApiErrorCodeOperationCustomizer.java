@@ -7,7 +7,6 @@ import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -88,18 +87,8 @@ public class ApiErrorCodeOperationCustomizer implements OperationCustomizer {
     payload.put("success", false);
     payload.put("code", this.resolveExampleKey(errorCode));
     payload.put("message", errorCode.getMessage());
-    payload.put("data", this.createMetadata(errorCode));
+    payload.put("data", null);
     return payload;
-  }
-
-  private Map<String, Object> createMetadata(BaseErrorCode errorCode) {
-    Map<String, Object> metadata = new LinkedHashMap<>();
-    metadata.put("type", errorCode.getDomain());
-    metadata.put("httpStatus", errorCode.getHttpStatus().value());
-    metadata.put("path", "{request-path}");
-    metadata.put("timestamp", OffsetDateTime.now().toString());
-    metadata.put("logLevel", errorCode.getLogLevel().name());
-    return metadata;
   }
 
   private String resolveExampleKey(BaseErrorCode errorCode) {

@@ -49,7 +49,7 @@ public interface BaseErrorCode extends ExceptionSupplier {
     return () -> new CoreException(this, safeArgs);
   }
 
-  default CoreException getWithoutStackTrace() {
+  default CoreException throwWithoutStackTrace() {
     return new CoreException(this, false);
   }
 
