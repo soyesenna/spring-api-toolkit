@@ -16,7 +16,7 @@ public class PagingRequestConverter implements Converter<String, PagingRequest> 
   @Override
   public PagingRequest convert(String source) {
     try {
-      return objectMapper.readValue(source, PagingRequest.class);
+      return this.objectMapper.readValue(source, PagingRequest.class);
     } catch (Exception e) {
       throw new IllegalArgumentException("JSON parsing error", e);
     }
